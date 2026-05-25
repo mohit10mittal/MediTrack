@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Alert, Switch, Linking,
+  Alert, Switch, Linking, Platform,
 } from 'react-native';
 import { useSQLiteContext } from 'expo-sqlite';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -88,6 +88,20 @@ export default function SettingsScreen() {
     Linking.openSettings();
   };
 
+  const handleOpenExactAlarmSettings = () => {
+    if (Platform.OS !== 'android') return;
+    Linking.sendIntent('android.settings.REQUEST_SCHEDULE_EXACT_ALARM', [
+      { key: 'android.provider.Settings.EXTRA_APP_PACKAGE', value: 'com.meditrack.app' },
+    ]).catch(() => Linking.openSettings());
+  };
+
+  const handleDisableBatteryOptimization = () => {
+    if (Platform.OS !== 'android') return;
+    Linking.sendIntent('android.settings.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS', [
+      { key: 'android.provider.Settings.EXTRA_APP_PACKAGE', value: 'com.meditrack.app' },
+    ]).catch(() => Linking.openSettings());
+  };
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
@@ -126,6 +140,31 @@ export default function SettingsScreen() {
             onPress={handleOpenNotificationSettings}
           />
         </View>
+
+        {/* Android alarm fix */}
+        {Platform.OS === 'android' && (
+          <>
+            <Text style={styles.sectionTitle}>Alarm Permissions</Text>
+            <View style={[styles.section, styles.alarmWarning]}>
+              <Text style={styles.alarmNote}>
+                If alarms are not ringing, enable both settings below, then tap "Reschedule all reminders" above.
+              </Text>
+            </View>
+            <View style={[styles.section, { marginTop: 8 }]}>
+              <SettingRow
+                label="Allow exact alarms"
+                subtitle="Required on Android 12+ — tap to enable in Settings"
+                onPress={handleOpenExactAlarmSettings}
+              />
+              <View style={styles.separator} />
+              <SettingRow
+                label="Disable battery optimization"
+                subtitle="Prevents Android from blocking alarms in the background"
+                onPress={handleDisableBatteryOptimization}
+              />
+            </View>
+          </>
+        )}
 
         {/* About */}
         <Text style={styles.sectionTitle}>About</Text>
@@ -216,5 +255,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: Spacing.xl,
     lineHeight: 18,
+  },
+  alarmWarning: {
+    backgroundColor: '#FFF8E1',
+    borderColor: '#FFE082',
+    padding: Spacing.md,
+  },
+  alarmNote: {
+    fontSize: FontSize.sm,
+    color: '#795548',
+    lineHeight: 20,
   },
 });

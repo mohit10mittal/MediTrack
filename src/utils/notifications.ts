@@ -14,21 +14,37 @@ Notifications.setNotificationHandler({
 
 export async function requestNotificationPermissions(): Promise<boolean> {
   if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('medicine-alarms', {
-      name: 'Medicine Alarms',
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 500, 200, 500, 200, 500],
-      lightColor: '#2E7D32',
-      sound: 'alarm_ringtone',
-      enableVibrate: true,
-      bypassDnd: true,
-      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
-      audioAttributes: {
-        usage: Notifications.AndroidAudioUsage.ALARM,
-        contentType: Notifications.AndroidAudioContentType.SONIFICATION,
-        flags: { enforceAudibility: true, showWhenScreenOff: false },
-      },
-    });
+    try {
+      // AudioAttributes with ALARM usage — bypasses DND on Android.
+      // Falls back to numeric constants if the enum values aren't available at runtime.
+      const alarmUsage = (Notifications.AndroidAudioUsage as any)?.ALARM ?? 4;
+      const sonification = (Notifications.AndroidAudioContentType as any)?.SONIFICATION ?? 4;
+      await Notifications.setNotificationChannelAsync('medicine-alarms', {
+        name: 'Medicine Alarms',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 500, 200, 500, 200, 500],
+        lightColor: '#2E7D32',
+        sound: 'alarm_ringtone',
+        enableVibrate: true,
+        bypassDnd: true,
+        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+        audioAttributes: {
+          usage: alarmUsage,
+          contentType: sonification,
+        },
+      });
+    } catch {
+      // If audioAttributes aren't supported on this Android version, create a basic channel.
+      await Notifications.setNotificationChannelAsync('medicine-alarms', {
+        name: 'Medicine Alarms',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 500, 200, 500, 200, 500],
+        lightColor: '#2E7D32',
+        sound: 'alarm_ringtone',
+        enableVibrate: true,
+        bypassDnd: true,
+      });
+    }
   }
 
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
