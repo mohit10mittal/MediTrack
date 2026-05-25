@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
-import { View, StyleSheet, Platform } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import { Colors } from '../../src/constants/colors';
 
@@ -50,6 +51,10 @@ function SettingsIcon({ color }: { color: string }) {
 }
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
+  const bottomPad = insets.bottom > 0 ? insets.bottom : 8;
+  const tabBarHeight = 56 + bottomPad;
+
   return (
     <Tabs
       screenOptions={{
@@ -60,9 +65,9 @@ export default function TabLayout() {
           backgroundColor: Colors.tabBar,
           borderTopColor: Colors.tabBarBorder,
           borderTopWidth: 1,
-          paddingBottom: Platform.OS === 'ios' ? 20 : 8,
+          paddingBottom: bottomPad,
           paddingTop: 8,
-          height: Platform.OS === 'ios' ? 82 : 64,
+          height: tabBarHeight,
         },
         tabBarLabelStyle: {
           fontSize: 11,
