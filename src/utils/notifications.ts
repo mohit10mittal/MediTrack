@@ -14,13 +14,20 @@ Notifications.setNotificationHandler({
 
 export async function requestNotificationPermissions(): Promise<boolean> {
   if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('medicine-reminders', {
-      name: 'Medicine Reminders',
+    await Notifications.setNotificationChannelAsync('medicine-alarms', {
+      name: 'Medicine Alarms',
       importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 400, 200, 400, 200, 400],
+      vibrationPattern: [0, 500, 200, 500, 200, 500],
       lightColor: '#2E7D32',
       sound: 'alarm_ringtone',
       enableVibrate: true,
+      bypassDnd: true,
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+      audioAttributes: {
+        usage: Notifications.AndroidAudioUsage.ALARM,
+        contentType: Notifications.AndroidAudioContentType.SONIFICATION,
+        flags: { enforceAudibility: true, showWhenScreenOff: false },
+      },
     });
   }
 
@@ -70,10 +77,11 @@ export async function scheduleMedicineReminders(
 
       const id = await Notifications.scheduleNotificationAsync({
         content: {
-          title: `${medicine.name} in 1 minute`,
+          title: `⏰ ${medicine.name} in 1 minute`,
           body: `${profile.name} — ${medicine.dosage || 'take your dose'}${medicine.illness ? ` (${medicine.illness})` : ''}`,
           data: { medicineId: medicine.id, profileId: profile.id, time },
           sound: 'alarm_ringtone.wav',
+          ...(Platform.OS === 'android' && { channelId: 'medicine-alarms' }),
         },
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.DATE,
