@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Alert, Switch, Linking, Platform,
 } from 'react-native';
+import * as IntentLauncher from 'expo-intent-launcher';
 import { useSQLiteContext } from 'expo-sqlite';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
@@ -88,18 +89,31 @@ export default function SettingsScreen() {
     Linking.openSettings();
   };
 
-  const handleOpenExactAlarmSettings = () => {
+  const handleOpenExactAlarmSettings = async () => {
     if (Platform.OS !== 'android') return;
-    Linking.sendIntent('android.settings.REQUEST_SCHEDULE_EXACT_ALARM', [
-      { key: 'android.provider.Settings.EXTRA_APP_PACKAGE', value: 'com.meditrack.app' },
-    ]).catch(() => Linking.openSettings());
+    try {
+      await IntentLauncher.startActivityAsync(
+        'android.settings.REQUEST_SCHEDULE_EXACT_ALARM',
+        { data: 'package:com.meditrack.app' }
+      );
+    } catch {
+      Linking.openSettings();
+    }
   };
 
-  const handleDisableBatteryOptimization = () => {
+  const handleDisableBatteryOptimization = async () => {
     if (Platform.OS !== 'android') return;
-    Linking.sendIntent('android.settings.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS', [
-      { key: 'android.provider.Settings.EXTRA_APP_PACKAGE', value: 'com.meditrack.app' },
-    ]).catch(() => Linking.openSettings());
+    try {
+      await IntentLauncher.startActivityAsync(
+        'android.settings.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS',
+        { data: 'package:com.meditrack.app' }
+      );
+    } catch {
+      // Fallback: open the full battery optimization list
+      IntentLauncher.startActivityAsync(
+        'android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS'
+      ).catch(() => Linking.openSettings());
+    }
   };
 
   return (
