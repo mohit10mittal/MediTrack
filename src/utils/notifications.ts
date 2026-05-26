@@ -12,39 +12,31 @@ Notifications.setNotificationHandler({
   }),
 });
 
+const CHANNEL_ID = 'medicine-alarms-v3';
+
 export async function requestNotificationPermissions(): Promise<boolean> {
   if (Platform.OS === 'android') {
-    try {
-      // AudioAttributes with ALARM usage — bypasses DND on Android.
-      // Falls back to numeric constants if the enum values aren't available at runtime.
-      const alarmUsage = (Notifications.AndroidAudioUsage as any)?.ALARM ?? 4;
-      const sonification = (Notifications.AndroidAudioContentType as any)?.SONIFICATION ?? 4;
-      await Notifications.setNotificationChannelAsync('medicine-alarms', {
-        name: 'Medicine Alarms',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 500, 200, 500, 200, 500],
-        lightColor: '#2E7D32',
-        sound: 'alarm_ringtone',
-        enableVibrate: true,
-        bypassDnd: true,
-        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
-        audioAttributes: {
-          usage: alarmUsage,
-          contentType: sonification,
-        },
-      });
-    } catch {
-      // If audioAttributes aren't supported on this Android version, create a basic channel.
-      await Notifications.setNotificationChannelAsync('medicine-alarms', {
-        name: 'Medicine Alarms',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 500, 200, 500, 200, 500],
-        lightColor: '#2E7D32',
-        sound: 'alarm_ringtone',
-        enableVibrate: true,
-        bypassDnd: true,
-      });
-    }
+    // Delete old channels so Android doesn't use their cached (immutable) settings.
+    await Notifications.deleteNotificationChannelAsync('medicine-reminders').catch(() => {});
+    await Notifications.deleteNotificationChannelAsync('medicine-alarms').catch(() => {});
+    await Notifications.deleteNotificationChannelAsync('medicine-alarms-v2').catch(() => {});
+
+    // Create fresh channel. Android channels are immutable after first creation,
+    // so a new ID is required each time audio settings change.
+    await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
+      name: 'Medicine Alarms',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 500, 200, 500, 200, 500],
+      lightColor: '#2E7D32',
+      sound: 'alarm_ringtone',
+      enableVibrate: true,
+      bypassDnd: true,
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+      audioAttributes: {
+        usage: Notifications.AndroidAudioUsage.ALARM,
+        contentType: Notifications.AndroidAudioContentType.SONIFICATION,
+      },
+    });
   }
 
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
@@ -97,7 +89,7 @@ export async function scheduleMedicineReminders(
           body: `${profile.name} — ${medicine.dosage || 'take your dose'}${medicine.illness ? ` (${medicine.illness})` : ''}`,
           data: { medicineId: medicine.id, profileId: profile.id, time },
           sound: 'alarm_ringtone.wav',
-          ...(Platform.OS === 'android' && { channelId: 'medicine-alarms' }),
+          ...(Platform.OS === 'android' && { channelId: CHANNEL_ID }),
         },
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.DATE,
