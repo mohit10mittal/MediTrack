@@ -161,16 +161,20 @@ export default function SettingsScreen() {
             <Text style={styles.sectionTitle}>Alarm Permissions</Text>
             <View style={[styles.section, styles.alarmWarning]}>
               <Text style={styles.alarmNote}>
-                If alarms are not ringing, enable both settings below, then tap "Reschedule all reminders" above.
+                If alarms are not ringing, enable the settings below, then tap "Reschedule all reminders" above.
               </Text>
             </View>
             <View style={[styles.section, { marginTop: 8 }]}>
-              <SettingRow
-                label="Allow exact alarms"
-                subtitle="Required on Android 12+ — tap to enable in Settings"
-                onPress={handleOpenExactAlarmSettings}
-              />
-              <View style={styles.separator} />
+              {(Platform.Version as number) >= 31 && (
+                <>
+                  <SettingRow
+                    label="Allow exact alarms"
+                    subtitle="Android 12+ only — tap to enable in Settings"
+                    onPress={handleOpenExactAlarmSettings}
+                  />
+                  <View style={styles.separator} />
+                </>
+              )}
               <SettingRow
                 label="Disable battery optimization"
                 subtitle="Prevents Android from blocking alarms in the background"
