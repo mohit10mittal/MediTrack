@@ -4,6 +4,7 @@ import {
   Alert, Switch, Linking, Platform,
 } from 'react-native';
 import * as IntentLauncher from 'expo-intent-launcher';
+import * as Notifications from 'expo-notifications';
 import { useSQLiteContext } from 'expo-sqlite';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
@@ -101,6 +102,28 @@ export default function SettingsScreen() {
     }
   };
 
+  const handleTestAlarm = async () => {
+    const hasPerms = await requestNotificationPermissions();
+    if (!hasPerms) {
+      Alert.alert('Permission denied', 'Please allow notifications in device settings.');
+      return;
+    }
+    const fireAt = new Date(Date.now() + 5000);
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: '⏰ MediTrack Alarm Test',
+        body: 'If you hear a full ringtone, alarms are working correctly.',
+        sound: 'alarm_ringtone.wav',
+        ...(Platform.OS === 'android' && { channelId: 'medicine-alarms-v3' }),
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: fireAt,
+      },
+    });
+    Alert.alert('Test scheduled', 'Alarm will fire in 5 seconds. Lock your screen now to test background behavior.');
+  };
+
   const handleDisableBatteryOptimization = async () => {
     if (Platform.OS !== 'android') return;
     try {
@@ -136,6 +159,12 @@ export default function SettingsScreen() {
         {/* Notifications */}
         <Text style={styles.sectionTitle}>Notifications</Text>
         <View style={styles.section}>
+          <SettingRow
+            label="Test alarm now"
+            subtitle="Fires a test alarm in 5 seconds — turn up alarm volume first"
+            onPress={handleTestAlarm}
+          />
+          <View style={styles.separator} />
           <SettingRow
             label="Reschedule all reminders"
             subtitle="Re-creates reminders for the next 7 days"
